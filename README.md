@@ -30,11 +30,22 @@ cd newbee/job
 
 首次复制 `etc/job.yaml.example` 到 `etc/job.yaml`，设置 `DatabaseConf`、`RedisConf`、`AsynqConf` 和 `TaskConf`，并按环境调整监听地址。示例 RPC 端口为 `9105`。任务开关应与所需消费者和调度任务一致。
 
-入口未启用 `conf.UseEnv()`，配置中的 `${...}` 必须在启动前替换为本地值。真实配置与凭据不要提交。数据库和 Redis 就绪后运行：
+入口使用 `conf.UseEnv()` 展开配置中的 `${变量名}`。启动前注入模板引用的环境变量；真实配置与凭据不要提交。首次部署先创建空数据库，配置独立 Redis 逻辑库，并保持 `AsynqConf.Enable`、`TaskConf.EnableDPTask` 与 `EnableScheduledTask` 为 `false`（模板和代码默认均关闭）。数据库和 Redis 就绪后运行：
 
 ```bash
 go run . -f etc/job.yaml
 ```
+
+RPC 启动后，在另一个终端从 `job` 目录初始化空库（需要 `grpcurl`）：
+
+```bash
+grpcurl -plaintext -max-time 300 -import-path . -proto job.proto \
+  -d '{}' 127.0.0.1:9105 job.Job/initDatabase
+```
+
+初始化仅创建或补齐表结构，不插入 `hello_world` 或其他示例任务；重复调用成功返回，不重置已有任务。RPC 初始化入口仅向受控内网开放。已有数据库升级前仍需备份并审核 Schema 差异。
+
+随后创建所需任务、核对任务状态和 Pattern 对应的处理器，先启用 `AsynqConf.Enable`，再按需启用动态周期任务 `EnableDPTask` 或预定义调度 `EnableScheduledTask` 并重启。`AsynqConf.Enable: false` 时仅启动 RPC，不启动 MQ 消费者及调度器，可用于首次建表。启用 Asynq 后，即使两个调度开关关闭，MQ 消费者仍会消费配置队列中的既有任务；空库验证应使用独立 Redis 逻辑库。
 
 ## 构建与验证
 

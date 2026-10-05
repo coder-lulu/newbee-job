@@ -40,7 +40,7 @@ func main() {
 	flag.Parse()
 
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(*configFile, &c, conf.UseEnv())
 	ctx := svc.NewServiceContext(c)
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
@@ -59,15 +59,28 @@ func main() {
 
 	serviceGroup.Add(s)
 
-	serviceGroup.Add(mqtask.NewMQTask(ctx))
-	if c.TaskConf.EnableDPTask {
-		serviceGroup.Add(dynamicperiodictask.NewDPTask(ctx))
-	}
-
-	if c.TaskConf.EnableScheduledTask {
-		serviceGroup.Add(scheduletask.NewSchedulerTask(ctx))
+	for _, background := range backgroundServices(ctx) {
+		serviceGroup.Add(background)
 	}
 
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
 	serviceGroup.Start()
+}
+
+// backgroundServices keeps schema initialization available without queue workers.
+func backgroundServices(ctx *svc.ServiceContext) []service.Service {
+	if !ctx.Config.AsynqConf.Enable {
+		return nil
+	}
+	var services []service.Service
+	if ctx.AsynqServer != nil {
+		services = append(services, mqtask.NewMQTask(ctx))
+	}
+	if ctx.Config.TaskConf.EnableDPTask && ctx.AsynqPTM != nil {
+		services = append(services, dynamicperiodictask.NewDPTask(ctx))
+	}
+	if ctx.Config.TaskConf.EnableScheduledTask && ctx.AsynqScheduler != nil {
+		services = append(services, scheduletask.NewSchedulerTask(ctx))
+	}
+	return services
 }

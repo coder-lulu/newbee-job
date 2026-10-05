@@ -16,6 +16,6 @@ type Config struct {
 }
 
 type TaskConf struct {
-	EnableScheduledTask bool `json:",default=true"`
-	EnableDPTask        bool `json:",default=true"`
+	EnableScheduledTask bool `json:",default=false"`
+	EnableDPTask        bool `json:",default=false"`
 }

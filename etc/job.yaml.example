@@ -41,8 +41,8 @@ AsynqConf:
 #  DB: 0 # Redis database index
 #  Concurrency: 20 # max concurrent process job task num
 #  SyncInterval: 10 # seconds, this field specifies how often sync should happen
-  Enable: true
+  Enable: false
 
 TaskConf:
   EnableScheduledTask: false
-  EnableDPTask: true
+  EnableDPTask: false

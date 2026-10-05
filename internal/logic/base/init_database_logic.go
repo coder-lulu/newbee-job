@@ -3,15 +3,12 @@ package base
 import (
 	"context"
 
-	"github.com/coder-lulu/newbee-job/internal/utils/dberrorhandler"
-
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/suyuan32/simple-admin-common/enum/errorcode"
 	"github.com/suyuan32/simple-admin-common/i18n"
 	"github.com/suyuan32/simple-admin-common/msg/logmsg"
 	"github.com/zeromicro/go-zero/core/errorx"
 
-	"github.com/coder-lulu/newbee-job/internal/mqs/amq/types/pattern"
 	"github.com/coder-lulu/newbee-job/internal/svc"
 	"github.com/coder-lulu/newbee-job/types/job"
 
@@ -39,37 +36,9 @@ func (l *InitDatabaseLogic) InitDatabase(in *job.Empty) (*job.BaseResp, error) {
 		return nil, errorx.NewCodeError(errorcode.Internal, err.Error())
 	}
 
-	count, err := l.svcCtx.DB.Task.Query().Count(l.ctx)
-	if err != nil {
-		return nil, dberrorhandler.DefaultEntError(l.Logger, err, "database error")
-	}
-
-	if count != 0 {
-		return nil, errorx.NewInvalidArgumentError(i18n.AlreadyInit)
-	}
-
-	err = l.insertTaskData()
-	if err != nil {
-		return nil, err
-	}
+	// Initialization creates schema only; existing tasks are never seeded or reset.
 
 	return &job.BaseResp{
 		Msg: i18n.Success,
 	}, nil
-}
-
-func (l *InitDatabaseLogic) insertTaskData() error {
-	err := l.svcCtx.DB.Task.Create().
-		SetName("hello_world").
-		SetTaskGroup("base").
-		SetCronExpression("@every 60s").
-		SetPattern(pattern.RecordHelloWorld).
-		SetPayload("{\"name\": \"Mike (DPTask 60s)\"}").
-		Exec(l.ctx)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
