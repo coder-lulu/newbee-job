@@ -1,0 +1,48 @@
+# Copy this file to job.yaml and configure local values or environment variables.
+Name: job.rpc
+ListenOn: 0.0.0.0:9105
+
+DatabaseConf:
+  Type: mysql
+  Host: 192.168.10.100
+  Port: 13306
+  DBName: newbee
+  Username: root # set your username
+  Password: "${JOB_ETC_JOB_YAML_PASSWORD}"
+  MaxOpenConn: 100
+  SSLMode: disable
+  CacheTime: 5
+
+RedisConf:
+  Host: 192.168.10.100:26739
+  Pass: "123456"
+  Db: 0
+
+Log:
+  ServiceName: jobRpcLogger
+  Mode: file
+  Path: /home/data/logs/job/rpc
+  Encoding: json
+  Level: info
+  Compress: false
+  KeepDays: 7
+  StackCoolDownMillis: 100
+
+Prometheus:
+  Host: 0.0.0.0
+  Port: 4005
+  Path: /metrics
+
+AsynqConf:
+# if you do not use WithRedisConf, you should uncomment the configuration below
+
+#  Addr: localhost:6379  # Redis address
+#  Pass: # Redis Password
+#  DB: 0 # Redis database index
+#  Concurrency: 20 # max concurrent process job task num
+#  SyncInterval: 10 # seconds, this field specifies how often sync should happen
+  Enable: true
+
+TaskConf:
+  EnableScheduledTask: false
+  EnableDPTask: true
